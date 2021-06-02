@@ -1,11 +1,11 @@
 package main
 
 import (
-    "fmt"
     "log"
+    "database/sql"
+    "fmt"
 
     _ "github.com/go-sql-driver/mysql"
-    "github.com/jmoiron/sqlx"
 )
 
 type Country struct {
@@ -15,31 +15,29 @@ type Country struct {
     GroupName   string  `db:"group_name"`
 }
 
-type CountryList []Country
-
 func main() {
-    var countryList CountryList
-
-    db, err := sqlx.Open("mysql", "yusuke:password@/worldcup2014")
+    db, err := sql.Open("mysql", "yusuke:password@/worldcup2014")
     if err != nil {
         log.Fatal(err)
     }
+    defer db.Close()
 
-    rows, err := db.Queryx("SELECT * FROM countries")
+    rows, err := db.Query("SELECT * FROM countries;")
     if err != nil {
-        log.Fatal(err)
+        log.Println(err)
     }
+    defer rows.Close()
 
-    var country Country
+    var c Country
     for rows.Next() {
-        err := rows.StructScan(&country)
+        err := rows.Scan(&c.ID, &c.Name, &c.Ranking, &c.GroupName)
         if err != nil {
             log.Fatal(err)
         }
-        countryList = append(countryList, country)
+        fmt.Printf("ID: %d, Name: %s, Ranking: %d, GroupId: %s\n", c.ID, c.Name, c.Ranking, c.GroupName)
     }
-
-    for _, country = range countryList {
-        fmt.Println(country)
+    err = rows.Err()
+    if err != nil {
+        log.Fatal(err)
     }
 }
